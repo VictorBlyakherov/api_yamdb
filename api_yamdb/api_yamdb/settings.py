@@ -1,10 +1,20 @@
+import os
 from datetime import timedelta
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'p&l%385148kslhtyn^##a1)ilz@4zqj=rq&agdol^##zgl9(vs'
+SECRET_KEY = os.getenv('SECRET_KEY')
+
+MAX_EMAIL_LENGTH = 254
+MAX_NAME_LENGTH = 256
+MAX_SLUG_LENGTH = 50
+MAX_USERNAME_LENGTH = 150
+USER_OWN_URL = 'me'
+FROM_EMAIL = 'xxxxxvic@yandex.ru',
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -23,7 +33,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'django_filters',
-    'api_yamdb.apps.ApiYamdbConfig',
     'api.apps.ApiConfig',
     'reviews.apps.ReviewsConfig',
 ]

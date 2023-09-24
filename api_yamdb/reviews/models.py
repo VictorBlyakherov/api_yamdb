@@ -25,6 +25,10 @@ class User(AbstractUser):
     def is_admin(self):
         return self.role == 'admin'
 
+    @property
+    def is_user(self):
+        return self.role == 'user'
+
 
 class Category(models.Model):
     name = models.TextField()
@@ -60,7 +64,7 @@ class Review(models.Model):
     author = models.ForeignKey(
         User, on_delete=models.CASCADE
     )
-    score = models.IntegerField(
+    score = models.PositiveSmallIntegerField(
         validators=[
             MinValueValidator(1, 'Рейтинг должен быть от 1 до 10'),
             MaxValueValidator(10, 'Рейтинг должен быть от 1 до 10'),

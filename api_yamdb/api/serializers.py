@@ -1,10 +1,19 @@
 import re
 
+from django.core.validators import validate_email
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
 from rest_framework.validators import UniqueValidator
+
 from reviews.models import Category, Comment, Genre, Review, Title, User
+from api_yamdb.settings import (MAX_SLUG_LENGTH,
+                                MAX_EMAIL_LENGTH, MAX_USERNAME_LENGTH,
+                                MAX_NAME_LENGTH, USER_OWN_URL)
+
+
+pattern_username = re.compile(r'^[\w.@+-]+\Z')
+pattern_slug = re.compile(r'^[-a-zA-Z0-9_]+$')
 
 
 class SignupUserSerializer(serializers.ModelSerializer):
@@ -20,25 +29,30 @@ class SignupUserSerializer(serializers.ModelSerializer):
     )
 
     def validate_username(self, value):
-        pattern = re.compile(r'^[\w.@+-]+\Z')
-        if value.lower() == "me":
+        if value.lower() == USER_OWN_URL:
             raise serializers.ValidationError('Некорректное имя пользователя')
-        if not pattern.match(value):
+        if not pattern_username.match(value):
             raise serializers.ValidationError(
                 'Username не соответствует шаблону'
             )
-        if len(value) > 150:
-            raise serializers.ValidationError('Email не соответствует шаблону')
+        if len(value) > MAX_USERNAME_LENGTH:
+            raise serializers.ValidationError(
+                'Username не соответствует шаблону'
+            )
         return value
 
     def validate_email(self, value):
-        if len(value) > 254:
+        if len(value) > MAX_EMAIL_LENGTH:
+            raise serializers.ValidationError(
+                'Email не должен быть длинее 254 символов'
+            )
+        if validate_email(value):
             raise serializers.ValidationError('Email не соответствует шаблону')
         return value
 
     class Meta:
         model = User
-        fields = ("username", "email")
+        fields = ("username", "email", )
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -49,16 +63,15 @@ class CategorySerializer(serializers.ModelSerializer):
     )
 
     def validate(self, data):
-        pattern = re.compile(r'^[-a-zA-Z0-9_]+$')
-        if len(data['name']) > 256:
+        if len(data['name']) > MAX_NAME_LENGTH:
             raise serializers.ValidationError(
                 'Имя категории должен быть короче 256 символов'
             )
-        if len(data['slug']) > 50:
+        if len(data['slug']) > MAX_SLUG_LENGTH:
             raise serializers.ValidationError(
                 'Slug должен быть короче 50 символов'
             )
-        if not pattern.match(data['slug']):
+        if not pattern_slug.match(data['slug']):
             raise serializers.ValidationError('Slug не соответствует шаблону')
         return data
 
@@ -79,16 +92,15 @@ class GenreSerializer(serializers.ModelSerializer):
     )
 
     def validate(self, data):
-        pattern = re.compile(r'^[-a-zA-Z0-9_]+$')
-        if len(data['name']) > 256:
+        if len(data['name']) > MAX_NAME_LENGTH:
             raise serializers.ValidationError(
                 'Имя жанра должен быть короче 256 символов'
             )
-        if len(data['slug']) > 50:
+        if len(data['slug']) > MAX_SLUG_LENGTH:
             raise serializers.ValidationError(
                 'Slug должен быть короче 50 символов'
             )
-        if not pattern.match(data['slug']):
+        if not pattern_slug.match(data['slug']):
             raise serializers.ValidationError('Slug не соответствует шаблону')
         return data
 
@@ -110,7 +122,7 @@ class TitleSerializer(serializers.ModelSerializer):
     )
 
     def validate(self, data):
-        if len(data['name']) > 256:
+        if len(data['name']) > MAX_NAME_LENGTH:
             raise serializers.ValidationError(
                 'Имя произведения должен быть короче 256 символов'
             )
@@ -119,7 +131,7 @@ class TitleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Title
         lookup_field = 'id'
-        fields = '__all__'
+        fields = ('id', 'name', 'year', 'description', 'genre', 'category', )
 
         extra_kwargs = {
             'url': {'lookup_field': 'id'}
@@ -162,7 +174,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = '__all__'
+        fields = ('id', 'text', 'author', 'score', 'pub_date', 'title', )
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -176,7 +188,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = '__all__'
+        fields = ('id', 'review', 'text', 'pub_date', 'author', 'title', )
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -188,19 +200,22 @@ class UserSerializer(serializers.ModelSerializer):
     ])
 
     def validate_username(self, value):
-        pattern = re.compile(r'^[\w.@+-]+\Z')
-        if not pattern.match(value):
+        if not pattern_username.match(value):
             raise serializers.ValidationError(
                 'Username не соответствует шаблону'
             )
-        if len(value) > 150:
+        if len(value) > MAX_USERNAME_LENGTH:
             raise serializers.ValidationError(
                 'Email не соответствует шаблону'
             )
         return value
 
     def validate_email(self, value):
-        if len(value) > 254:
+        if len(value) > MAX_EMAIL_LENGTH:
+            raise serializers.ValidationError(
+                'Email не может быть длинее 254 символов'
+            )
+        if validate_email(value):
             raise serializers.ValidationError('Email не соответствует шаблону')
         return value
 
