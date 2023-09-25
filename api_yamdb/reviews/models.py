@@ -5,29 +5,33 @@ from django.db import models
 
 
 class User(AbstractUser):
-    UserRole = (
-        ('admin', 'Administrator'),
-        ('moderator', 'Moderator'),
-        ('user', 'User')
+    class UserRole(models.TextChoices):
+        USER = 'user'
+        MODERATOR = 'moderator'
+        ADMIN = 'admin'
+
+    username = models.CharField(unique=True, max_length=150, )
+    email = models.EmailField(unique=True, max_length=254, )
+    role = models.CharField(
+        choices=UserRole.choices,
+        max_length=30,
+        default=UserRole.USER
     )
-    username = models.CharField(unique=True, max_length=150)
-    email = models.EmailField(max_length=254,)
-    role = models.CharField(choices=UserRole, max_length=30, default='user')
     bio = models.TextField(null=True, blank=True)
     first_name = models.TextField(null=True, blank=True, max_length=150)
     last_name = models.TextField(null=True, blank=True, max_length=150)
 
     @property
     def is_moderator(self):
-        return self.role == 'moderator'
+        return self.role == self.UserRole.MODERATOR
 
     @property
     def is_admin(self):
-        return self.role == 'admin'
+        return self.role == self.UserRole.ADMIN
 
     @property
     def is_user(self):
-        return self.role == 'user'
+        return self.role == self.UserRole.USER
 
 
 class Category(models.Model):

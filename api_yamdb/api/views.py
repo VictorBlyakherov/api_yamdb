@@ -1,5 +1,6 @@
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
+from django.db import IntegrityError
 from django.db.models import Avg
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, permissions, status, viewsets
@@ -39,44 +40,30 @@ class SignUpView(APIView):
     http_method_names = ('post', )
 
     def post(self, request):
-        return_data = ''
-        return_status = ''
+        serializer = SignupUserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
         try:
-            if User.objects.filter(
-                    username=request.data['username'],
-                    email=request.data['email']).exists():
-                return_status = status.HTTP_200_OK
-            if return_status == '' and User.objects.filter(
-                    username=request.data['username']
-            ).exists():
-                return_status = status.HTTP_400_BAD_REQUEST
-            if return_status == '' and User.objects.filter(
-                    email=request.data['email']
-            ).exists():
-                return_status = status.HTTP_400_BAD_REQUEST
-        except KeyError:
-            pass
-        print(return_status)
-
-        if return_status == '':
-            serializer = SignupUserSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            user = get_object_or_404(
-                User,
-                username=serializer.validated_data['username']
+            username = serializer.validated_data.get('username')
+            email = serializer.validated_data.get('email')
+            user, status_code = User.objects.get_or_create(
+                username=username,
+                email=email
             )
-            code = default_token_generator.make_token(user)
-            send_mail(
-                subject='Код регистрации',
-                message=f'Код подтверждения: {code}',
-                from_email=FROM_EMAIL,
-                recipient_list=[user.email, ],
+        except IntegrityError:
+            return Response(
+                'Данный email или username уже занят',
+                status.HTTP_400_BAD_REQUEST
             )
-            return_data = {'email': user.email, 'username': user.username}
-            return_status = status.HTTP_200_OK
 
-        return Response(return_data, return_status)
+        code = default_token_generator.make_token(user)
+        send_mail(
+            subject='Код регистрации',
+            message=f'Код подтверждения: {code}',
+            from_email=FROM_EMAIL,
+            recipient_list=[user.email, ],
+        )
+        return Response(serializer.data, status.HTTP_200_OK)
 
 
 class SendTokenView(APIView):

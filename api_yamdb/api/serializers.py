@@ -17,16 +17,8 @@ pattern_slug = re.compile(r'^[-a-zA-Z0-9_]+$')
 
 
 class SignupUserSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(
-        validators=[
-            UniqueValidator(queryset=User.objects.all())
-        ]
-    )
-    email = serializers.EmailField(
-        validators=[
-            UniqueValidator(queryset=User.objects.all())
-        ]
-    )
+    username = serializers.CharField()
+    email = serializers.EmailField()
 
     def validate_username(self, value):
         if value.lower() == USER_OWN_URL:
@@ -52,7 +44,7 @@ class SignupUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("username", "email", )
+        fields = ('username', 'email', )
 
 
 class CategorySerializer(serializers.ModelSerializer):
